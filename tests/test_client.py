@@ -1,7 +1,7 @@
 import pytest
 import respx
 import httpx
-from weather_collector.client import fetch_weather, WeatherAPIError
+from weather_collector.client import fetch_weather, fetch_history, WeatherAPIError
 
 MOCK_RESPONSE = {
     "daily": {
@@ -42,3 +42,24 @@ def test_fetch_weather_handles_server_error():
     )
     with pytest.raises(WeatherAPIError, match="500"):
         fetch_weather(13.75, 100.52)
+        
+@respx.mock
+def test_fetch_history_returns_correct_records():
+    respx.get("https://archive-api.open-meteo.com/v1/archive").mock(
+        return_value=httpx.Response(200, json=MOCK_RESPONSE)
+    )
+    
+    records = fetch_history(13.75, 100.52, "2026-01-01", "2026-01-03")
+    
+    assert len(records) == 3
+    assert records[0].date == "2024-04-03"
+    assert records[0].temperature_max == 34.3
+    
+@respx.mock
+def test_fetch_history_handles_invalid_date():
+    respx.get("https://archive-api.open-meteo.com/v1/archive").mock(
+        return_value=httpx.Response(400)
+    )
+    
+    with pytest.raises(WeatherAPIError, match="400"):
+        fetch_history(13.75, 100.52, "2099-01-01", "2099-01-07")

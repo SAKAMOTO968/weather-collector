@@ -60,3 +60,43 @@ def _parse_response(data: dict) -> list[WeatherRecord]:
         )
         for i in range(len(dates))
     ]
+    
+def fetch_history(
+    latitude: float, longitude: float, start_date: str, end_date: str
+) -> list[WeatherRecord]:
+    """
+    Fetch historical weather data from Open-Meteo Archive API.
+    
+    Args:
+        latitude: เส้นรุ้ง
+        longitude: เส้นแวง
+        start_date: วันที่เริ่มต้น format "YYYY-MM-DD"
+        end_date: วันสิ้นสุด format "YYYY-MM-DD"
+        
+    Returns:
+        list of WeatherRecord
+        
+    Raises:
+        WeatherAPIError: ถ้า API ตอบกลับผิดพลาด
+    """
+    url = "https://archive-api.open-meteo.com/v1/archive"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "start_date": start_date,
+        "end_date": end_date,
+        "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max",
+        "timezone": "Asia/Bangkok",
+    }
+    
+    try:
+        response = httpx.get(url, params=params, timeout=10.0)
+        response.raise_for_status()
+    except httpx.TimeoutException:
+        raise WeatherAPIError("Request timed out")
+    except httpx.HTTPStatusError as e:
+        raise WeatherAPIError(f"API returned {e.response.status_code}")
+    except httpx.RequestError as e:
+        raise WeatherAPIError(f"Connection error: {e}")
+    
+    return _parse_response(response.json())
