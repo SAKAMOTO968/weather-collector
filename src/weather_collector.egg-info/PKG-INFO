@@ -1,8 +1,0 @@
-Metadata-Version: 2.4
-Name: weather-collector
-Version: 0.1.0
-Requires-Python: >=3.11
-Requires-Dist: httpx
-Provides-Extra: dev
-Requires-Dist: pytest; extra == "dev"
-Requires-Dist: respx; extra == "dev"
